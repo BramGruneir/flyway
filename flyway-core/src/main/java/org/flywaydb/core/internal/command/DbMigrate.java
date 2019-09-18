@@ -98,9 +98,8 @@ public class DbMigrate {
      * @param configuration     The Flyway configuration.
      * @param callbackExecutor  The callbacks executor.
      */
-    public DbMigrate(Database database,
-                     SchemaHistory schemaHistory, Schema schema, MigrationResolver migrationResolver,
-                     Configuration configuration, CallbackExecutor callbackExecutor) {
+    public DbMigrate(Database database, SchemaHistory schemaHistory, Schema schema, MigrationResolver migrationResolver,
+            Configuration configuration, CallbackExecutor callbackExecutor) {
         this.database = database;
         this.connectionUserObjects = database.getMigrationConnection();
         this.schemaHistory = schemaHistory;
@@ -127,8 +126,9 @@ public class DbMigrate {
             schemaHistory.create();
 
             count = configuration.isGroup() ?
-                    // When group is active, start the transaction boundary early to
-                    // ensure that all changes to the schema history table are either committed or rolled back atomically.
+            // When group is active, start the transaction boundary early to
+            // ensure that all changes to the schema history table are either committed or
+            // rolled back atomically.
                     schemaHistory.lock(new Callable<Integer>() {
                         @Override
                         public Integer call() {
@@ -155,15 +155,17 @@ public class DbMigrate {
         while (true) {
             final boolean firstRun = total == 0;
             int count = configuration.isGroup()
-                    // With group active a lock on the schema history table has already been acquired.
+                    // With group active a lock on the schema history table has already been
+                    // acquired.
                     ? migrateGroup(firstRun)
-                    // Otherwise acquire the lock now. The lock will be released at the end of each migration.
+                    // Otherwise acquire the lock now. The lock will be released at the end of each
+                    // migration.
                     : schemaHistory.lock(new Callable<Integer>() {
-                @Override
-                public Integer call() {
-                    return migrateGroup(firstRun);
-                }
-            });
+                        @Override
+                        public Integer call() {
+                            return migrateGroup(firstRun);
+                        }
+                    });
             total += count;
             if (count == 0) {
                 // No further migrations available
@@ -176,14 +178,13 @@ public class DbMigrate {
     /**
      * Migrate a group of one (group = false) or more (group = true) migrations.
      *
-     * @param firstRun Where this is the first time this code runs in this migration run.
+     * @param firstRun Where this is the first time this code runs in this migration
+     *                 run.
      * @return The number of newly applied migrations.
      */
     private Integer migrateGroup(boolean firstRun) {
-        MigrationInfoServiceImpl infoService =
-                new MigrationInfoServiceImpl(migrationResolver, schemaHistory, configuration,
-                        configuration.getTarget(), configuration.isOutOfOrder(),
-                        true, true, true, true);
+        MigrationInfoServiceImpl infoService = new MigrationInfoServiceImpl(migrationResolver, schemaHistory,
+                configuration, configuration.getTarget(), configuration.isOutOfOrder(), true, true, true, true);
         infoService.refresh();
 
         MigrationInfo current = infoService.current();
@@ -208,8 +209,8 @@ public class DbMigrate {
                     // Only consider versioned migrations
                     if (migrationInfo.getVersion() != null) {
                         LOG.warn("Schema " + schema + " has a version (" + currentSchemaVersion
-                                + ") that is newer than the latest available migration ("
-                                + migrationInfo.getVersion() + ") !");
+                                + ") that is newer than the latest available migration (" + migrationInfo.getVersion()
+                                + ") !");
                         break;
                     }
                 }
@@ -218,15 +219,17 @@ public class DbMigrate {
 
         MigrationInfo[] failed = infoService.failed();
         if (failed.length > 0) {
-            if ((failed.length == 1)
-                    && (failed[0].getState() == MigrationState.FUTURE_FAILED)
+            if ((failed.length == 1) && (failed[0].getState() == MigrationState.FUTURE_FAILED)
                     && configuration.isIgnoreFutureMigrations()) {
-                LOG.warn("Schema " + schema + " contains a failed future migration to version " + failed[0].getVersion() + " !");
+                LOG.warn("Schema " + schema + " contains a failed future migration to version " + failed[0].getVersion()
+                        + " !");
             } else {
                 if (failed[0].getVersion() == null) {
-                    throw new FlywayException("Schema " + schema + " contains a failed repeatable migration (" + failed[0].getDescription() + ") !");
+                    throw new FlywayException("Schema " + schema + " contains a failed repeatable migration ("
+                            + failed[0].getDescription() + ") !");
                 }
-                throw new FlywayException("Schema " + schema + " contains a failed migration to version " + failed[0].getVersion() + " !");
+                throw new FlywayException("Schema " + schema + " contains a failed migration to version "
+                        + failed[0].getVersion() + " !");
             }
         }
 
@@ -252,7 +255,8 @@ public class DbMigrate {
      * Logs the summary of this migration run.
      *
      * @param migrationSuccessCount The number of successfully applied migrations.
-     * @param executionTime         The total time taken to perform this migration run (in ms).
+     * @param executionTime         The total time taken to perform this migration
+     *                              run (in ms).
      */
 
     private void logSummary(int migrationSuccessCount, long executionTime) {
@@ -262,14 +266,17 @@ public class DbMigrate {
         }
 
         if (migrationSuccessCount == 1) {
-            LOG.info("Successfully applied 1 migration to schema " + schema + " (execution time " + TimeFormat.format(executionTime) + ")");
+            LOG.info("Successfully applied 1 migration to schema " + schema + " (execution time "
+                    + TimeFormat.format(executionTime) + ")");
         } else {
-            LOG.info("Successfully applied " + migrationSuccessCount + " migrations to schema " + schema + " (execution time " + TimeFormat.format(executionTime) + ")");
+            LOG.info("Successfully applied " + migrationSuccessCount + " migrations to schema " + schema
+                    + " (execution time " + TimeFormat.format(executionTime) + ")");
         }
     }
 
     /**
-     * Applies this migration to the database. The migration state and the execution time are updated accordingly.
+     * Applies this migration to the database. The migration state and the execution
+     * time are updated accordingly.
      *
      * @param group The group of migrations to apply.
      */
@@ -299,7 +306,8 @@ public class DbMigrate {
                 stopWatch.stop();
                 int executionTime = (int) stopWatch.getTotalTimeMillis();
                 schemaHistory.addAppliedMigration(migration.getVersion(), migration.getDescription(),
-                        migration.getType(), migration.getScript(), migration.getResolvedMigration().getChecksum(), executionTime, false);
+                        migration.getType(), migration.getScript(), migration.getResolvedMigration().getChecksum(),
+                        executionTime, false);
             }
             throw e;
         }
@@ -324,7 +332,9 @@ public class DbMigrate {
                         "Detected both transactional and non-transactional migrations within the same migration group"
                                 + " (even though mixed is false). First offending migration:"
                                 + (resolvedMigration.getVersion() == null ? "" : " " + resolvedMigration.getVersion())
-                                + (StringUtils.hasLength(resolvedMigration.getDescription()) ? " " + resolvedMigration.getDescription() : "")
+                                + (StringUtils.hasLength(resolvedMigration.getDescription())
+                                        ? " " + resolvedMigration.getDescription()
+                                        : "")
                                 + (inTransaction ? "" : " [non-transactional]"));
             }
 
@@ -391,8 +401,9 @@ public class DbMigrate {
         final MigrationExecutor migrationExecutor = migration.getResolvedMigration().getExecutor();
         final String migrationText;
         if (migration.getVersion() != null) {
-            migrationText = "schema " + schema + " to version " + migration.getVersion() + " - " + migration.getDescription() +
-                    (isOutOfOrder ? " [out of order]" : "") + (migrationExecutor.canExecuteInTransaction() ? "" : " [non-transactional]");
+            migrationText = "schema " + schema + " to version " + migration.getVersion() + " - "
+                    + migration.getDescription() + (isOutOfOrder ? " [out of order]" : "")
+                    + (migrationExecutor.canExecuteInTransaction() ? "" : " [non-transactional]");
         } else {
             migrationText = "schema " + schema + " with repeatable migration " + migration.getDescription()
                     + (migrationExecutor.canExecuteInTransaction() ? "" : " [non-transactional]");

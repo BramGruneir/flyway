@@ -53,7 +53,8 @@ public class TransactionTemplate {
      * Creates a new transaction template for this connection.
      *
      * @param connection          The connection for the transaction.
-     * @param rollbackOnException Whether to roll back the transaction when an exception is thrown.
+     * @param rollbackOnException Whether to roll back the transaction when an
+     *                            exception is thrown.
      */
     public TransactionTemplate(Connection connection, boolean rollbackOnException) {
         this.connection = connection;

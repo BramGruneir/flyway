@@ -56,12 +56,8 @@ public class CockroachDBDatabase extends Database<CockroachDBConnection> {
      */
     public CockroachDBDatabase(Configuration configuration, Connection connection, boolean originalAutoCommit
 
-
-
     ) {
         super(configuration, connection, originalAutoCommit
-
-
 
         );
     }
@@ -69,12 +65,8 @@ public class CockroachDBDatabase extends Database<CockroachDBConnection> {
     @Override
     protected CockroachDBConnection getConnection(Connection connection
 
-
-
     ) {
         return new CockroachDBConnection(configuration, this, connection, originalAutoCommit
-
-
 
         );
     }
@@ -88,8 +80,6 @@ public class CockroachDBDatabase extends Database<CockroachDBConnection> {
     @Override
     protected SqlStatementBuilderFactory createSqlStatementBuilderFactory(PlaceholderReplacer placeholderReplacer
 
-
-
     ) {
         return new CockroachDBSqlStatementBuilderFactory(placeholderReplacer);
     }
@@ -98,9 +88,11 @@ public class CockroachDBDatabase extends Database<CockroachDBConnection> {
     protected MigrationVersion determineVersion() {
         String version;
         try {
-            version = getMainConnection().getJdbcTemplate().queryForString("SELECT value FROM crdb_internal.node_build_info where field='Version'");
+            version = getMainConnection().getJdbcTemplate()
+                    .queryForString("SELECT value FROM crdb_internal.node_build_info where field='Version'");
             if (version == null) {
-                version = getMainConnection().getJdbcTemplate().queryForString("SELECT value FROM crdb_internal.node_build_info where field='Tag'");
+                version = getMainConnection().getJdbcTemplate()
+                        .queryForString("SELECT value FROM crdb_internal.node_build_info where field='Tag'");
             }
         } catch (SQLException e) {
             throw new FlywaySqlException("Unable to determine CockroachDB version", e);
@@ -129,13 +121,6 @@ public class CockroachDBDatabase extends Database<CockroachDBConnection> {
     public boolean supportsChangingCurrentSchema() {
         return true;
     }
-
-
-
-
-
-
-
 
     public String getBooleanTrue() {
         return "TRUE";

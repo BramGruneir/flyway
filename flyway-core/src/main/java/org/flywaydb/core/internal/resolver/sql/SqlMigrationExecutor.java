@@ -32,23 +32,6 @@ public class SqlMigrationExecutor implements MigrationExecutor {
      */
     private final SqlScript sqlScript;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     /**
      * Creates a new sql script migration based on this sql script.
      *
@@ -56,25 +39,15 @@ public class SqlMigrationExecutor implements MigrationExecutor {
      */
     SqlMigrationExecutor(Database database, SqlScript sqlScript
 
-
-
     ) {
         this.database = database;
         this.sqlScript = sqlScript;
-
-
-
-
 
     }
 
     @Override
     public void execute(Context context) {
-        database.createSqlScriptExecutor(new JdbcTemplate(context.getConnection())
-
-
-
-        ).execute(sqlScript);
+        database.createSqlScriptExecutor(new JdbcTemplate(context.getConnection())).execute(sqlScript);
     }
 
     @Override

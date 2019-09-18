@@ -84,15 +84,6 @@ public abstract class Database<C extends Connection> implements Closeable {
      */
     private C migrationConnection;
 
-
-
-
-
-
-
-
-
-
     /**
      * The major.minor version of the database.
      */
@@ -103,11 +94,10 @@ public abstract class Database<C extends Connection> implements Closeable {
      *
      * @param configuration      The Flyway configuration.
      * @param connection         The main connection to use.
-     * @param originalAutoCommit The original auto-commit state for connections to this database.
+     * @param originalAutoCommit The original auto-commit state for connections to
+     *                           this database.
      */
     public Database(Configuration configuration, java.sql.Connection connection, boolean originalAutoCommit
-
-
 
     ) {
         this.configuration = configuration;
@@ -119,10 +109,6 @@ public abstract class Database<C extends Connection> implements Closeable {
             throw new FlywaySqlException("Unable to get metadata for connection", e);
         }
 
-
-
-
-
         version = determineVersion();
     }
 
@@ -133,8 +119,6 @@ public abstract class Database<C extends Connection> implements Closeable {
      * @return The Flyway Connection.
      */
     protected abstract C getConnection(java.sql.Connection connection
-
-
 
     );
 
@@ -157,7 +141,8 @@ public abstract class Database<C extends Connection> implements Closeable {
         }
     }
 
-    protected final void ensureDatabaseIsCompatibleWithFlywayEdition(String vendor, String database, String oldestSupportedVersion) {
+    protected final void ensureDatabaseIsCompatibleWithFlywayEdition(String vendor, String database,
+            String oldestSupportedVersion) {
         if (!version.isAtLeast(oldestSupportedVersion)) {
             throw new FlywayEnterpriseUpgradeRequiredException(vendor, database, computeVersionDisplayName(version));
         }
@@ -170,7 +155,8 @@ public abstract class Database<C extends Connection> implements Closeable {
         }
     }
 
-    protected final void recommendFlywayUpgradeIfNecessaryForMajorVersion(String database, String newestSupportedVersion) {
+    protected final void recommendFlywayUpgradeIfNecessaryForMajorVersion(String database,
+            String newestSupportedVersion) {
         if (version.isMajorNewerThan(newestSupportedVersion)) {
             LOG.warn("Flyway upgrade recommended: " + database + " " + computeVersionDisplayName(version)
                     + " is newer than this version of Flyway and support has not been tested.");
@@ -188,15 +174,10 @@ public abstract class Database<C extends Connection> implements Closeable {
 
     public final SqlStatementBuilderFactory createSqlStatementBuilderFactory(
 
-
-
     ) {
         return createSqlStatementBuilderFactory(
-                createPlaceholderReplacer(
-                        configuration.isPlaceholderReplacement(), configuration.getPlaceholders(),
+                createPlaceholderReplacer(configuration.isPlaceholderReplacement(), configuration.getPlaceholders(),
                         configuration.getPlaceholderPrefix(), configuration.getPlaceholderSuffix())
-
-
 
         );
     }
@@ -204,33 +185,27 @@ public abstract class Database<C extends Connection> implements Closeable {
     protected abstract SqlStatementBuilderFactory createSqlStatementBuilderFactory(
             PlaceholderReplacer placeholderReplacer
 
-
-
     );
 
     /**
      * Creates a new SqlScriptExecutor for this specific database.
      * <p>
-
-
-
-
+     * 
+     * 
+     * 
+     * 
      * @return The new SqlScriptExecutor.
      */
     public SqlScriptExecutor createSqlScriptExecutor(JdbcTemplate jdbcTemplate
 
-
-
     ) {
         return new DefaultSqlScriptExecutor(jdbcTemplate
-
-
 
         );
     }
 
     protected PlaceholderReplacer createPlaceholderReplacer(boolean enabled, Map<String, String> placeholders,
-                                                            String placeholderPrefix, String placeholderSuffix) {
+            String placeholderPrefix, String placeholderSuffix) {
         if (enabled) {
             return new DefaultPlaceholderReplacer(placeholders, placeholderPrefix, placeholderSuffix);
         }
@@ -245,7 +220,8 @@ public abstract class Database<C extends Connection> implements Closeable {
     }
 
     /**
-     * @return The name of the db. Used for loading db-specific scripts such as <code>createMetaDataTable.sql</code>.
+     * @return The name of the db. Used for loading db-specific scripts such as
+     *         <code>createMetaDataTable.sql</code>.
      */
     public abstract String getDbName();
 
@@ -272,35 +248,10 @@ public abstract class Database<C extends Connection> implements Closeable {
     public abstract boolean supportsDdlTransactions();
 
     /**
-     * @return {@code true} if this database supports changing a connection's current schema. {@code false if not}.
+     * @return {@code true} if this database supports changing a connection's
+     *         current schema. {@code false if not}.
      */
     public abstract boolean supportsChangingCurrentSchema();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     /**
      * @return The representation of the value {@code true} in a boolean column.
@@ -313,7 +264,8 @@ public abstract class Database<C extends Connection> implements Closeable {
     public abstract String getBooleanFalse();
 
     /**
-     * Quote these identifiers for use in sql queries. Multiple identifiers will be quoted and separated by a dot.
+     * Quote these identifiers for use in sql queries. Multiple identifiers will be
+     * quoted and separated by a dot.
      *
      * @param identifiers The identifiers to quote.
      * @return The fully qualified quoted identifiers.
@@ -342,12 +294,14 @@ public abstract class Database<C extends Connection> implements Closeable {
     protected abstract String doQuote(String identifier);
 
     /**
-     * @return {@code true} if this database use a catalog to represent a schema. {@code false} if a schema is simply a schema.
+     * @return {@code true} if this database use a catalog to represent a schema.
+     *         {@code false} if a schema is simply a schema.
      */
     public abstract boolean catalogIsSchema();
 
     /**
-     * @return Whether to only use a single connection for both schema history table management and applying migrations.
+     * @return Whether to only use a single connection for both schema history table
+     *         management and applying migrations.
      */
     public boolean useSingleConnection() {
         return false;
@@ -365,8 +319,6 @@ public abstract class Database<C extends Connection> implements Closeable {
             initConnection(this, mainJdbcConnection, configuration.getInitSql());
             this.mainConnection = getConnection(mainJdbcConnection
 
-
-
             );
         }
         return mainConnection;
@@ -380,12 +332,10 @@ public abstract class Database<C extends Connection> implements Closeable {
             if (useSingleConnection()) {
                 this.migrationConnection = mainConnection;
             } else {
-                java.sql.Connection migrationJdbcConnection =
-                        JdbcUtils.openConnection(configuration.getDataSource(), configuration.getConnectRetries());
+                java.sql.Connection migrationJdbcConnection = JdbcUtils.openConnection(configuration.getDataSource(),
+                        configuration.getConnectRetries());
                 initConnection(this, migrationJdbcConnection, configuration.getInitSql());
                 this.migrationConnection = getConnection(migrationJdbcConnection
-
-
 
                 );
             }
@@ -406,11 +356,7 @@ public abstract class Database<C extends Connection> implements Closeable {
         }
         new DefaultSqlScriptExecutor(new JdbcTemplate(connection)
 
-
-
         ).execute(new SqlScript(database.createSqlStatementBuilderFactory(
-
-
 
         ), new StringResource(initSql), true));
     }
@@ -420,7 +366,8 @@ public abstract class Database<C extends Connection> implements Closeable {
      */
     protected MigrationVersion determineVersion() {
         try {
-            return MigrationVersion.fromVersion(jdbcMetaData.getDatabaseMajorVersion() + "." + jdbcMetaData.getDatabaseMinorVersion());
+            return MigrationVersion
+                    .fromVersion(jdbcMetaData.getDatabaseMajorVersion() + "." + jdbcMetaData.getDatabaseMinorVersion());
         } catch (SQLException e) {
             throw new FlywaySqlException("Unable to determine the major version of the database", e);
         }
@@ -432,12 +379,9 @@ public abstract class Database<C extends Connection> implements Closeable {
         placeholders.put("table", table.getName());
         placeholders.put("table_quoted", table.toString());
 
-        PlaceholderReplacer placeholderReplacer =
-                createPlaceholderReplacer(true, placeholders, "${", "}");
+        PlaceholderReplacer placeholderReplacer = createPlaceholderReplacer(true, placeholders, "${", "}");
 
         SqlStatementBuilderFactory sqlStatementBuilderFactory = createSqlStatementBuilderFactory(placeholderReplacer
-
-
 
         );
 
@@ -450,34 +394,18 @@ public abstract class Database<C extends Connection> implements Closeable {
     }
 
     public String getInsertStatement(Table table) {
-        return "INSERT INTO " + table
-                + " (" + quote("installed_rank")
-                + "," + quote("version")
-                + "," + quote("description")
-                + "," + quote("type")
-                + "," + quote("script")
-                + "," + quote("checksum")
-                + "," + quote("installed_by")
-                + "," + quote("execution_time")
-                + "," + quote("success")
-                + ")"
+        return "INSERT INTO " + table + " (" + quote("installed_rank") + "," + quote("version") + ","
+                + quote("description") + "," + quote("type") + "," + quote("script") + "," + quote("checksum") + ","
+                + quote("installed_by") + "," + quote("execution_time") + "," + quote("success") + ")"
                 + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
     }
 
     public String getSelectStatement(Table table, int maxCachedInstalledRank) {
-        return "SELECT " + quote("installed_rank")
-                + "," + quote("version")
-                + "," + quote("description")
-                + "," + quote("type")
-                + "," + quote("script")
-                + "," + quote("checksum")
-                + "," + quote("installed_on")
-                + "," + quote("installed_by")
-                + "," + quote("execution_time")
-                + "," + quote("success")
-                + " FROM " + table
-                + " WHERE " + quote("installed_rank") + " > " + maxCachedInstalledRank
-                + " ORDER BY " + quote("installed_rank");
+        return "SELECT " + quote("installed_rank") + "," + quote("version") + "," + quote("description") + ","
+                + quote("type") + "," + quote("script") + "," + quote("checksum") + "," + quote("installed_on") + ","
+                + quote("installed_by") + "," + quote("execution_time") + "," + quote("success") + " FROM " + table
+                + " WHERE " + quote("installed_rank") + " > " + maxCachedInstalledRank + " ORDER BY "
+                + quote("installed_rank");
     }
 
     public void close() {

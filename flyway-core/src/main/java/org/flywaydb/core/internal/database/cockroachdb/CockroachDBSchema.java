@@ -105,10 +105,9 @@ public class CockroachDBSchema extends Schema<CockroachDBDatabase> {
      * @throws SQLException when the clean statements could not be generated.
      */
     private List<String> generateDropStatementsForViews() throws SQLException {
-        List<String> names =
-                jdbcTemplate.queryForStringList(
-                        "SELECT table_name FROM information_schema.views" +
-                                " WHERE table_catalog=? AND table_schema='public'", name);
+        List<String> names = jdbcTemplate.queryForStringList(
+                "SELECT table_name FROM information_schema.views" + " WHERE table_catalog=? AND table_schema='public'",
+                name);
         List<String> statements = new ArrayList<>();
         for (String name : names) {
             statements.add("DROP VIEW IF EXISTS " + database.quote(this.name, name) + " CASCADE");
@@ -124,10 +123,8 @@ public class CockroachDBSchema extends Schema<CockroachDBDatabase> {
      * @throws SQLException when the clean statements could not be generated.
      */
     private List<String> generateDropStatementsForSequences() throws SQLException {
-        List<String> names =
-                jdbcTemplate.queryForStringList(
-                        "SELECT sequence_name FROM information_schema.sequences" +
-                                " WHERE sequence_catalog=? AND sequence_schema='public'", name);
+        List<String> names = jdbcTemplate.queryForStringList("SELECT sequence_name FROM information_schema.sequences"
+                + " WHERE sequence_catalog=? AND sequence_schema='public'", name);
         List<String> statements = new ArrayList<>();
         for (String name : names) {
             statements.add("DROP SEQUENCE IF EXISTS " + database.quote(this.name, name) + " CASCADE");
@@ -141,25 +138,25 @@ public class CockroachDBSchema extends Schema<CockroachDBDatabase> {
         String query;
         if (cockroachDB1) {
             query =
-                    //Search for all the table names
+                    // Search for all the table names
                     "SELECT table_name FROM information_schema.tables" +
-                            //in this schema
+                    // in this schema
                             " WHERE table_schema=?" +
-                            //that are real tables (as opposed to views)
+                            // that are real tables (as opposed to views)
                             " AND table_type='BASE TABLE'";
         } else {
             query =
-                    //Search for all the table names
+                    // Search for all the table names
                     "SELECT table_name FROM information_schema.tables" +
-                            //in this database
-                            " WHERE table_catalog=?" +
-                            " AND table_schema='public'" +
-                            //that are real tables (as opposed to views)
+                    // in this database
+                            " WHERE table_catalog=?" + " AND table_schema='public'" +
+                            // that are real tables (as opposed to views)
                             " AND table_type='BASE TABLE'";
         }
 
         List<String> tableNames = jdbcTemplate.queryForStringList(query, name);
-        //Views and child tables are excluded as they are dropped with the parent table when using cascade.
+        // Views and child tables are excluded as they are dropped with the parent table
+        // when using cascade.
 
         Table[] tables = new Table[tableNames.size()];
         for (int i = 0; i < tableNames.size(); i++) {

@@ -27,15 +27,11 @@ import java.sql.SQLException;
  * CockroachDB connection.
  */
 public class CockroachDBConnection extends Connection<CockroachDBDatabase> {
-    CockroachDBConnection(Configuration configuration, CockroachDBDatabase database,
-                          java.sql.Connection connection, boolean originalAutoCommit
-
-
+    CockroachDBConnection(Configuration configuration, CockroachDBDatabase database, java.sql.Connection connection,
+            boolean originalAutoCommit
 
     ) {
         super(configuration, database, connection, originalAutoCommit
-
-
 
         );
     }

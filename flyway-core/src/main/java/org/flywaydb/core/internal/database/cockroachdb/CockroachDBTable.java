@@ -67,6 +67,7 @@ public class CockroachDBTable extends Table<CockroachDBDatabase, CockroachDBSche
 
     @Override
     protected void doLock() {
-        LOG.debug("Unable to lock " + this + " as CockroachDB does not support locking. No concurrent migration supported.");
+        LOG.debug("Unable to lock " + this
+                + " as CockroachDB does not support locking. No concurrent migration supported.");
     }
 }
