@@ -15,13 +15,17 @@
  */
 package org.flywaydb.core.internal.database.cockroachdb;
 
+import org.flywaydb.core.api.FlywayException;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.internal.database.base.Connection;
 import org.flywaydb.core.internal.database.base.Schema;
+import org.flywaydb.core.internal.database.base.Table;
 import org.flywaydb.core.internal.exception.FlywaySqlException;
 import org.flywaydb.core.internal.util.StringUtils;
 
 import java.sql.SQLException;
+import java.util.concurrent.Callable;
+import java.util.concurrent.locks.Lock;
 
 /**
  * CockroachDB connection.
@@ -65,5 +69,15 @@ public class CockroachDBConnection extends Connection<CockroachDBDatabase> {
             schema = "DEFAULT";
         }
         jdbcTemplate.execute("SET database = " + schema);
+    }
+
+    @Override
+    public <T> T lock(final Table table, final Callable<T> callable) {
+        // CockroachDB does not support locking.
+        try {
+            return callable.call();
+        } catch (Exception e) {
+            throw new FlywayException(e);
+        }
     }
 }

@@ -19,6 +19,8 @@ import org.flywaydb.core.api.FlywayException;
 import org.flywaydb.core.api.executor.Context;
 import org.flywaydb.core.api.executor.MigrationExecutor;
 import org.flywaydb.core.api.migration.spring.SpringJdbcMigration;
+import org.flywaydb.core.api.logging.Log;
+import org.flywaydb.core.api.logging.LogFactory;
 import org.springframework.jdbc.datasource.SingleConnectionDataSource;
 
 import java.sql.SQLException;
@@ -27,6 +29,8 @@ import java.sql.SQLException;
  * Adapter for executing migrations implementing SpringJdbcMigration.
  */
 public class SpringJdbcMigrationExecutor implements MigrationExecutor {
+    private static final Log LOG = LogFactory.getLog(SpringJdbcMigrationExecutor.class);
+
     /**
      * The SpringJdbcMigration to execute.
      */
@@ -43,13 +47,23 @@ public class SpringJdbcMigrationExecutor implements MigrationExecutor {
 
     @Override
     public void execute(Context context) throws SQLException {
-        try {
-            springJdbcMigration.migrate(new org.springframework.jdbc.core.JdbcTemplate(
-                    new SingleConnectionDataSource(context.getConnection(), true)));
-        } catch (SQLException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new FlywayException("Migration failed !", e);
+        int retryCount = 0;
+        while (true) {
+            try {
+                LOG.debug("Spring retrycount:" + retryCount);
+                springJdbcMigration.migrate(new org.springframework.jdbc.core.JdbcTemplate(
+                        new SingleConnectionDataSource(context.getConnection(), true)));
+                break;
+            } catch (SQLException e) {
+                if ((e.getSQLState() != "40001") || (retryCount >= 50)) {
+                    LOG.info("error: " + e);
+                    throw e;
+                }
+                retryCount++;
+                continue;
+            } catch (Exception e) {
+                throw new FlywayException("Migration failed !", e);
+            }
         }
     }
 

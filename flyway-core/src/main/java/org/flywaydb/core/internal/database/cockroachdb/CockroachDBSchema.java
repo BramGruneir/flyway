@@ -18,6 +18,8 @@ package org.flywaydb.core.internal.database.cockroachdb;
 import org.flywaydb.core.internal.database.base.Schema;
 import org.flywaydb.core.internal.database.base.Table;
 import org.flywaydb.core.internal.jdbc.JdbcTemplate;
+import org.flywaydb.core.api.logging.Log;
+import org.flywaydb.core.api.logging.LogFactory;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -27,6 +29,7 @@ import java.util.List;
  * CockroachDB implementation of Schema.
  */
 public class CockroachDBSchema extends Schema<CockroachDBDatabase> {
+    private static final Log LOG = LogFactory.getLog(CockroachDBSchema.class);
     /**
      * Is this CockroachDB 1.x.
      */
@@ -44,49 +47,95 @@ public class CockroachDBSchema extends Schema<CockroachDBDatabase> {
         cockroachDB1 = !database.getVersion().isAtLeast("2");
     }
 
+    public void checkRetryOrThrow(SQLException e, int retryCount) throws SQLException {
+        if ((e.getSQLState() != "40001") || (retryCount >= 50)) {
+            LOG.info("error: " + e);
+            throw e;
+        }
+    }
+
     @Override
     protected boolean doExists() throws SQLException {
-        return jdbcTemplate.queryForBoolean("SELECT EXISTS ( SELECT 1 FROM pg_database WHERE datname=? )", name);
+        int retryCount = 0;
+        while (true) {
+            try {
+                LOG.debug("Schema-Exists (" + name + ") retrycount:" + retryCount);
+                return jdbcTemplate.queryForBoolean("SELECT EXISTS ( SELECT 1 FROM pg_database WHERE datname=? )",
+                        name);
+            } catch (SQLException e) {
+                checkRetryOrThrow(e, retryCount);
+                retryCount++;
+            }
+        }
     }
 
     @Override
     protected boolean doEmpty() throws SQLException {
-        if (cockroachDB1) {
-            return !jdbcTemplate.queryForBoolean("SELECT EXISTS (" +
-                    "  SELECT 1" +
-                    "  FROM information_schema.tables" +
-                    "  WHERE table_schema=?" +
-                    "  AND table_type='BASE TABLE'" +
-                    ")", name);
+        int retryCount = 0;
+        while (true) {
+            try {
+                LOG.debug("Schema-Empty (" + name + ") retrycount:" + retryCount);
+                if (cockroachDB1) {
+                    return !jdbcTemplate
+                            .queryForBoolean("SELECT EXISTS (" + "  SELECT 1" + "  FROM information_schema.tables"
+                                    + "  WHERE table_schema=?" + "  AND table_type='BASE TABLE'" + ")", name);
+                }
+                return !jdbcTemplate.queryForBoolean("SELECT EXISTS (" + "  SELECT 1"
+                        + "  FROM information_schema.tables " + "  WHERE table_catalog=?"
+                        + "  AND table_schema='public'" + "  AND table_type='BASE TABLE'" + " UNION ALL" + "  SELECT 1"
+                        + "  FROM information_schema.sequences " + "  WHERE sequence_catalog=?"
+                        + "  AND sequence_schema='public'" + ")", name, name);
+            } catch (SQLException e) {
+                checkRetryOrThrow(e, retryCount);
+                retryCount++;
+            }
         }
-        return !jdbcTemplate.queryForBoolean("SELECT EXISTS (" +
-                "  SELECT 1" +
-                "  FROM information_schema.tables " +
-                "  WHERE table_catalog=?" +
-                "  AND table_schema='public'" +
-                "  AND table_type='BASE TABLE'" +
-                " UNION ALL" +
-                "  SELECT 1" +
-                "  FROM information_schema.sequences " +
-                "  WHERE sequence_catalog=?" +
-                "  AND sequence_schema='public'" +
-                ")", name, name);
     }
 
     @Override
     protected void doCreate() throws SQLException {
-        jdbcTemplate.execute("CREATE DATABASE " + database.quote(name));
+        int retryCount = 0;
+        while (true) {
+            try {
+                LOG.debug("Schema-Create (" + name + ") retrycount:" + retryCount);
+                jdbcTemplate.execute("CREATE DATABASE " + database.quote(name));
+                return;
+            } catch (SQLException e) {
+                checkRetryOrThrow(e, retryCount);
+                retryCount++;
+            }
+        }
     }
 
     @Override
     protected void doDrop() throws SQLException {
-        jdbcTemplate.execute("DROP DATABASE " + database.quote(name));
+        int retryCount = 0;
+        while (true) {
+            try {
+                LOG.debug("Schema-Drop (" + name + ") retrycount:" + retryCount);
+                jdbcTemplate.execute("DROP DATABASE " + database.quote(name));
+                return;
+            } catch (SQLException e) {
+                checkRetryOrThrow(e, retryCount);
+                retryCount++;
+            }
+        }
     }
 
     @Override
     protected void doClean() throws SQLException {
         for (String statement : generateDropStatementsForViews()) {
-            jdbcTemplate.execute(statement);
+            int retryCount = 0;
+            while (true) {
+                try {
+                    LOG.debug("Schema-Clean-Views retrycount:" + retryCount);
+                    jdbcTemplate.execute(statement);
+                    break;
+                } catch (SQLException e) {
+                    checkRetryOrThrow(e, retryCount);
+                    retryCount++;
+                }
+            }
         }
 
         for (Table table : allTables()) {
@@ -94,7 +143,17 @@ public class CockroachDBSchema extends Schema<CockroachDBDatabase> {
         }
 
         for (String statement : generateDropStatementsForSequences()) {
-            jdbcTemplate.execute(statement);
+            int retryCount = 0;
+            while (true) {
+                try {
+                    LOG.debug("Schema-Clean-Sequences retrycount:" + retryCount);
+                    jdbcTemplate.execute(statement);
+                    break;
+                } catch (SQLException e) {
+                    checkRetryOrThrow(e, retryCount);
+                    retryCount++;
+                }
+            }
         }
     }
 

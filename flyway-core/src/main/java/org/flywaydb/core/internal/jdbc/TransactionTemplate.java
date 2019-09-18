@@ -68,45 +68,20 @@ public class TransactionTemplate {
      * @return The result of the transaction code.
      */
     public <T> T execute(Callable<T> transactionCallback) {
-        boolean oldAutocommit = true;
-        try {
-            oldAutocommit = connection.getAutoCommit();
-            connection.setAutoCommit(false);
-            T result = transactionCallback.call();
-            connection.commit();
-            return result;
-        } catch (Exception e) {
-            RuntimeException rethrow;
-            if (e instanceof SQLException) {
-                rethrow = new FlywaySqlException("Unable to commit transaction", (SQLException) e);
-            } else if (e instanceof RuntimeException) {
-                rethrow = (RuntimeException) e;
-            } else {
-                rethrow = new FlywayException(e);
-            }
-
-            if (rollbackOnException) {
-                try {
-                    LOG.debug("Rolling back transaction...");
-                    connection.rollback();
-                    LOG.debug("Transaction rolled back");
-                } catch (SQLException se) {
-                    LOG.error("Unable to rollback transaction", se);
-                }
-            } else {
-                try {
-                    connection.commit();
-                } catch (SQLException se) {
-                    LOG.error("Unable to commit transaction", se);
-                }
-            }
-            throw rethrow;
-        } finally {
+        int retryCount = 0;
+        while (true) {
             try {
-                connection.setAutoCommit(oldAutocommit);
+                LOG.debug("Txn-Execute retrycount:" + retryCount);
+                return transactionCallback.call();
             } catch (SQLException e) {
-                LOG.error("Unable to restore autocommit to original value for connection", e);
+                if ((e.getSQLState() != "40001") || (retryCount >= 50)) {
+                    LOG.info("error: " + e);
+                    throw new FlywayException(e);
+                }
+            } catch (Exception e) {
+                throw new FlywayException(e);
             }
+            retryCount++;
         }
     }
 }

@@ -19,6 +19,8 @@ import org.flywaydb.core.api.FlywayException;
 import org.flywaydb.core.api.executor.Context;
 import org.flywaydb.core.api.executor.MigrationExecutor;
 import org.flywaydb.core.api.migration.jdbc.JdbcMigration;
+import org.flywaydb.core.api.logging.Log;
+import org.flywaydb.core.api.logging.LogFactory;
 
 import java.sql.SQLException;
 
@@ -26,6 +28,7 @@ import java.sql.SQLException;
  * Adapter for executing migrations implementing JdbcMigration.
  */
 public class JdbcMigrationExecutor implements MigrationExecutor {
+    private static final Log LOG = LogFactory.getLog(JdbcMigrationExecutor.class);
     /**
      * The JdbcMigration to execute.
      */
@@ -42,12 +45,22 @@ public class JdbcMigrationExecutor implements MigrationExecutor {
 
     @Override
     public void execute(Context context) throws SQLException {
-        try {
-            jdbcMigration.migrate(context.getConnection());
-        } catch (SQLException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new FlywayException("Migration failed !", e);
+        int retryCount = 0;
+        while (true) {
+            try {
+                LOG.debug("JDBC retrycount:" + retryCount);
+                jdbcMigration.migrate(context.getConnection());
+                break;
+            } catch (SQLException e) {
+                if ((e.getSQLState() != "40001") || (retryCount >= 50)) {
+                    LOG.info("error: " + e);
+                    throw e;
+                }
+                retryCount++;
+                continue;
+            } catch (Exception e) {
+                throw new FlywayException("Migration failed !", e);
+            }
         }
     }
 

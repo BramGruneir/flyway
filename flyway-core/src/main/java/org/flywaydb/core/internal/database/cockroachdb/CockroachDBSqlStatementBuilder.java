@@ -34,6 +34,7 @@ public class CockroachDBSqlStatementBuilder extends SqlStatementBuilder {
 
     CockroachDBSqlStatementBuilder() {
         super(Delimiter.SEMICOLON);
+        this.executeInTransaction = false;
     }
 
     @Override

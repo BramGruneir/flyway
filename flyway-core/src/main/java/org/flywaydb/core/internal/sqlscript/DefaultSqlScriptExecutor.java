@@ -26,6 +26,8 @@ import org.flywaydb.core.internal.jdbc.Result;
 import org.flywaydb.core.internal.jdbc.Results;
 import org.flywaydb.core.internal.util.AsciiTable;
 
+import java.sql.SQLException;
+
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -62,8 +64,23 @@ public class DefaultSqlScriptExecutor implements SqlScriptExecutor {
     private void executeStatement(JdbcTemplate jdbcTemplate, SqlScript sqlScript, SqlStatement sqlStatement) {
         String sql = sqlStatement.getSql() + sqlStatement.getDelimiter();
 
+        Results results;
+        int retryCount = 0;
+        while (true) {
+            LOG.debug("SQL retrycount:" + retryCount);
+            results = sqlStatement.execute(jdbcTemplate, this);
+            if (results.getException() == null) {
+                break;
+            }
 
+            SQLException e = results.getException();
+            if ((e.getSQLState() != "40001") || (retryCount >= 50)) {
+                LOG.info("error: " + e);
+                break;
+            }
 
+            retryCount++;
+        }
 
         if (results.getException() != null) {
             printWarnings(results);
